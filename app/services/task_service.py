@@ -9,13 +9,11 @@ def create_task(task):
 def get_tasks():
     return tasks
 
-
 def get_task(task_id):
     for task in tasks:
         if task["id"] == task_id:
             return task
     return None
-
 
 def update_task(task_id, updated_task):
     for task in tasks:
@@ -25,11 +23,9 @@ def update_task(task_id, updated_task):
             return task
     return None
 
-
 def delete_task(task_id):
     for task in tasks:
         if task["id"] == task_id:
             tasks.remove(task)
             return True
     return False
-
