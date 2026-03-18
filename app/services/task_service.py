@@ -1,31 +1,55 @@
-tasks = []
+from sqlalchemy.orm import Session
+from app import models, schemas
 
-def create_task(task):
-    task_dict = task.dict()
-    task_dict["id"] = len(tasks) + 1
-    tasks.append(task_dict)
-    return task_dict
 
-def get_tasks():
-    return tasks
+def create_task(db: Session, task: schemas.TaskCreate):
+    """Create a new task"""
+    db_task = models.Task(
+        title=task.title,
+        completed=task.completed
+    )
 
-def get_task(task_id):
-    for task in tasks:
-        if task["id"] == task_id:
-            return task
-    return None
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
 
-def update_task(task_id, updated_task):
-    for task in tasks:
-        if task["id"] == task_id:
-            task["title"] = updated_task.title
-            task["completed"] = updated_task.completed
-            return task
-    return None
+    return db_task
 
-def delete_task(task_id):
-    for task in tasks:
-        if task["id"] == task_id:
-            tasks.remove(task)
-            return True
-    return False
+
+def get_tasks(db: Session):
+    """Return all tasks"""
+    return db.query(models.Task).all()
+
+
+def get_task(db: Session, task_id: int):
+    """Return a single task by ID"""
+    return db.query(models.Task).filter(models.Task.id == task_id).first()
+
+
+def update_task(db: Session, task_id: int, task_update: schemas.TaskUpdate):
+    """Update an existing task"""
+    db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
+
+    if not db_task:
+        return None
+
+    db_task.title = task_update.title
+    db_task.completed = task_update.completed
+
+    db.commit()
+    db.refresh(db_task)
+
+    return db_task
+
+
+def delete_task(db: Session, task_id: int):
+    """Delete a task"""
+    db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
+
+    if not db_task:
+        return None
+
+    db.delete(db_task)
+    db.commit()
+
+    return db_task

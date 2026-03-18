@@ -1,44 +1,75 @@
-from fastapi import APIRouter, HTTPException
-from app.schemas import TaskCreate
-from app.services.task_service import (
-    create_task,
-    get_tasks,
-    get_task,
-    update_task,
-    delete_task,
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app import schemas
+from app.services import task_service
+
+router = APIRouter(
+    prefix="/tasks",
+    tags=["Tasks"]
 )
 
-router = APIRouter()
 
-@router.post("/tasks")
-def create(task: TaskCreate):
-    return create_task(task)
-
-
-@router.get("/tasks")
-def read_tasks():
-    return get_tasks()
+@router.post("/", response_model=schemas.Task)
+def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db)):
+    """
+    Create a new task
+    """
+    return task_service.create_task(db, task)
 
 
-@router.get("/tasks/{task_id}")
-def read_task(task_id: int):
-    task = get_task(task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+@router.get("/", response_model=list[schemas.Task])
+def get_tasks(db: Session = Depends(get_db)):
+    """
+    Get all tasks
+    """
+    return task_service.get_tasks(db)
+
+
+@router.get("/{task_id}", response_model=schemas.Task)
+def get_task(task_id: int, db: Session = Depends(get_db)):
+    """
+    Get a single task by ID
+    """
+    task = task_service.get_task(db, task_id)
+
+    if task is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
     return task
 
 
-@router.put("/tasks/{task_id}")
-def update(task_id: int, task: TaskCreate):
-    updated = update_task(task_id, task)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return updated
+@router.put("/{task_id}", response_model=schemas.Task)
+def update_task(task_id: int, task: schemas.TaskUpdate, db: Session = Depends(get_db)):
+    """
+    Update an existing task
+    """
+    updated_task = task_service.update_task(db, task_id, task)
+
+    if updated_task is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
+    return updated_task
 
 
-@router.delete("/tasks/{task_id}")
-def delete(task_id: int):
-    success = delete_task(task_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return {"message": "Task deleted"}
+@router.delete("/{task_id}")
+def delete_task(task_id: int, db: Session = Depends(get_db)):
+    """
+    Delete a task
+    """
+    deleted_task = task_service.delete_task(db, task_id)
+
+    if deleted_task is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
+    return {"message": "Task deleted successfully"}
