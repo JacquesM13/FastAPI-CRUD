@@ -10,12 +10,13 @@ class Task(Base):
     completed = Column(Boolean, default=False)
 
     user_id = Column(Integer, ForeignKey("users.id"))
-    user = Relationship("User", back_populates="tasks")
+    user = relationship("User", back_populates="tasks")
 
 
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
 
     tasks = relationship("Task", back_populates="user")

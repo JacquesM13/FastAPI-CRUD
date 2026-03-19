@@ -1,3 +1,6 @@
+fastapi
+fastapi
+fastapi
 pydantic
 sqlalchemy
 aiobotocore @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_b2htsn1rgl/croot/aiobotocore_1738237874912/work

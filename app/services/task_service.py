@@ -2,12 +2,10 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 
 
-def create_task(db: Session, task: schemas.TaskCreate):
+
+def create_task(db: Session, task: schemas.TaskCreate, user_id: int):
     """Create a new task"""
-    db_task = models.Task(
-        title=task.title,
-        completed=task.completed
-    )
+    db_task = models.Task(**task.dict(), user_id=user_id)
 
     db.add(db_task)
     db.commit()
@@ -16,9 +14,10 @@ def create_task(db: Session, task: schemas.TaskCreate):
     return db_task
 
 
-def get_tasks(db: Session):
-    """Return all tasks"""
-    return db.query(models.Task).all()
+def get_tasks(db: Session, user_id: int):
+    return db.query(models.Task).filter(
+        models.Task.user_id == user_id
+    ).all()
 
 
 def get_task(db: Session, task_id: int):

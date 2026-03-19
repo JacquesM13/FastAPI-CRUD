@@ -4,8 +4,6 @@ from pydantic import BaseModel
 class TaskBase(BaseModel):
     title: str
     completed: bool = False
-    user_id= int
-
 
 class TaskCreate(TaskBase):
     pass
@@ -24,6 +22,7 @@ class Task(TaskBase):
 
 class UserBase(BaseModel):
     email: str
+    password: str
 
 
 class UserCreate(UserBase):
@@ -32,6 +31,7 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
+    email: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
