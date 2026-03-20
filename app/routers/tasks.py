@@ -31,26 +31,33 @@ def get_tasks(
 
 
 @router.get("/{task_id}", response_model=schemas.Task)
-def get_task(task_id: int, db: Session = Depends(get_db)):
-    """
-    Get a single task by ID
-    """
-    task = task_service.get_task(db, task_id)
+def get_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    task = db.get(models.Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
 
-    if task is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Task not found"
-        )
+    # Enforce ownership
+    if task.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this task")
 
     return task
 
 
 @router.put("/{task_id}", response_model=schemas.Task)
-def update_task(task_id: int, task: schemas.TaskUpdate, db: Session = Depends(get_db)):
+def update_task(task_id: int,
+                task: schemas.TaskUpdate,
+                db: Session = Depends(get_db),
+                current_user: models.User = Depends(get_current_user)):
     """
     Update an existing task
     """
+    # Enforce ownership
+    if task.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this task")
     updated_task = task_service.update_task(db, task_id, task)
 
     if updated_task is None:
@@ -62,17 +69,20 @@ def update_task(task_id: int, task: schemas.TaskUpdate, db: Session = Depends(ge
     return updated_task
 
 
-@router.delete("/{task_id}")
-def delete_task(task_id: int, db: Session = Depends(get_db)):
-    """
-    Delete a task
-    """
-    deleted_task = task_service.delete_task(db, task_id)
+@router.delete("/{task_id}", response_model=schemas.Task)
+def delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    task = db.get(models.Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
 
-    if deleted_task is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Task not found"
-        )
+    # Enforce ownership
+    if task.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this task")
 
-    return {"message": "Task deleted successfully"}
+    db.delete(task)
+    db.commit()
+    return task
