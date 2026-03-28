@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TaskBase(BaseModel):
@@ -9,12 +9,14 @@ class TaskCreate(TaskBase):
     pass
 
 
-class TaskUpdate(TaskBase):
-    pass
+class TaskUpdate(BaseModel):
+    title: str | None = Field(None, min_length=1, max_length=255)
+    completed: bool | None = None
 
 
 class Task(TaskBase):
     id: int
+    user_id: int
 
     class Config:
         from_attributes = True
@@ -22,16 +24,14 @@ class Task(TaskBase):
 
 class UserBase(BaseModel):
     email: str
-    password: str
 
 
 class UserCreate(UserBase):
-    pass
+    password: str
 
 
 class User(UserBase):
     id: int
-    email: str
 
     class Config:
         from_attributes = True

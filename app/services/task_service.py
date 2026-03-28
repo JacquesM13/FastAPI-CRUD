@@ -1,54 +1,80 @@
 from sqlalchemy.orm import Session
 from app import models, schemas
+from fastapi import HTTPException
+from sqlalchemy import select, func
 
 
 
-def create_task(db: Session, task: schemas.TaskCreate, user_id: int):
+def create_task(db: Session, task_data: schemas.TaskCreate, user_id: int):
     """Create a new task"""
-    db_task = models.Task(**task.dict(), user_id=user_id)
 
-    db.add(db_task)
+    title = task_data.title.strip()
+
+    existing_task = db.query(models.Task).filter(
+        models.Task.user_id == user_id,
+        func.lower(models.Task.title) == title.lower()
+    ).first()
+
+    if existing_task:
+        raise HTTPException(
+            status_code=400,
+            detail="Task with this title already exists"
+        )
+
+    new_task = models.Task(
+        title=title,
+        completed=task_data.completed,
+        user_id=user_id
+    )
+
+    db.add(new_task)
     db.commit()
-    db.refresh(db_task)
+    db.refresh(new_task)
 
-    return db_task
+    return new_task
 
 
 def get_tasks(db: Session, user_id: int):
-    return db.query(models.Task).filter(
-        models.Task.user_id == user_id
-    ).all()
+    stmt = select(models.Task).where(models.Task.user_id == user_id)
+    return db.execute(stmt).scalars().all()
 
 
-def get_task(db: Session, task_id: int):
+def get_task(db: Session, task_id: int, user_id: int):
     """Return a single task by ID"""
-    return db.query(models.Task).filter(models.Task.id == task_id).first()
+    task = db.get(models.Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return task
 
-
-def update_task(db: Session, task_id: int, task_update: schemas.TaskUpdate):
+def update_task(db: Session, old_task: int, task_data: schemas.TaskUpdate, user_id: int):
     """Update an existing task"""
-    db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    task = db.get(models.Task, old_task)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
 
-    if not db_task:
-        return None
+    if task_data.title is not None:
+        task.title = task_data.title
 
-    db_task.title = task_update.title
-    db_task.completed = task_update.completed
+    if task_data.completed is not None:
+        task.completed = task_data.completed
 
     db.commit()
-    db.refresh(db_task)
+    db.refresh(task)
 
-    return db_task
+    return task
 
 
-def delete_task(db: Session, task_id: int):
+def delete_task(db: Session, task_id: int, user_id: int):
     """Delete a task"""
-    db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
-
-    if not db_task:
-        return None
-
-    db.delete(db_task)
+    task = db.get(models.Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    db.delete(task)
     db.commit()
-
-    return db_task
+    return task
