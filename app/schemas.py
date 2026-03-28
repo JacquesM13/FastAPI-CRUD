@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class TaskBase(BaseModel):
@@ -17,9 +17,7 @@ class TaskUpdate(BaseModel):
 class Task(TaskBase):
     id: int
     user_id: int
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserBase(BaseModel):
@@ -32,6 +30,4 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
