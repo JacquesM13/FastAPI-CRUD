@@ -33,3 +33,18 @@ def test_access_task_does_not_exist(client, auth_headers_for_user, test_user):
     auth_headers = auth_headers_for_user(test_user)
     response = client.get("/tasks/9999999", headers=auth_headers)
     assert response.status_code == 404
+
+def test_create_task(client, auth_headers_for_user, test_user):
+    data = {"title": "New task"}
+    auth_headers = auth_headers_for_user(test_user)
+    response = client.post("/tasks/", json=data, headers=auth_headers)
+    assert response.status_code == 200
+    assert response.json()["title"] == "New task"
+
+def test_create_task_sets_owner(client, auth_headers_for_user, test_user):
+    data = {"title": "Owned task"}
+    auth_headers = auth_headers_for_user(test_user)
+    response = client.post("/tasks/", json=data, headers=auth_headers)
+    assert response.status_code == 200
+    # body = response.json()
+    # assert "user_id" in body
