@@ -1,3 +1,4 @@
 Using FastAPI to make a task list tool with CRUD functionality.
-- Data Validation
-- Error handling
+- Router -> Services -> Database
+
+- Used schemas, models, databases, testing, error handling, data validation, etc.
