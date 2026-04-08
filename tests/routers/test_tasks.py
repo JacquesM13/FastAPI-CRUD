@@ -77,3 +77,23 @@ def test_delete_removes_task(client, auth_headers_for_user, test_user, test_user
     client.delete(f"/tasks/{test_user_task.id}", headers=headers)
     response = client.get(f"tasks/{test_user_task.id}", headers=headers)
     assert response.status_code == 404
+
+def test_get_tasks_with_pagination(client, auth_headers_for_user, db, test_user):
+    headers = auth_headers_for_user(test_user)
+    for i in range(5):
+        db.add(models.Task(title=f"Task {i}", user_id=test_user.id))
+    db.commit()
+
+    response = client.get("/tasks/?limit=2", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+def test_get_tasks_with_offset(client, auth_headers_for_user, db, test_user):
+    headers = auth_headers_for_user(test_user)
+    for i in range(5):
+        db.add(models.Task(title=f"Task {i}", user_id=test_user.id))
+    db.commit()
+
+    response = client.get("/tasks/?skip=2", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 3
