@@ -97,3 +97,30 @@ def test_get_tasks_with_offset(client, auth_headers_for_user, db, test_user):
     response = client.get("/tasks/?skip=2", headers=headers)
     assert response.status_code == 200
     assert len(response.json()) == 3
+
+def test_pagination_respects_user_isolation(client, auth_headers_for_user, db, test_user, other_user):
+    headers = auth_headers_for_user(test_user)
+
+    # My tasks
+    for i in range(3):
+        db.add(models.Task(title=f"My task {i}", user_id=test_user.id))
+
+    # Other's tasks
+    for i in range(3):
+        db.add(models.Task(title=f"Other's task {i}", user_id=other_user.id))
+
+    db.commit()
+    response = client.get("/tasks/", headers=headers)
+    assert response.status_code == 200
+    assert len(response.json()) == 3
+
+def test_filter_tasks_by_title(client, auth_headers_for_user, test_user, db):
+    headers = auth_headers_for_user(test_user)
+
+    db.add(models.Task(title="Study Python", user_id=test_user.id))
+    db.commit()
+
+    response = client.get("/tasks/?search=Python", headers=headers)
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1

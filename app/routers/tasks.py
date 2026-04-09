@@ -28,11 +28,16 @@ def create_task(
 def get_tasks(
     limit: int = 10,
     skip: int = 0,
+    search: str = "",
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    tasks = db.query(models.Task).filter(models.Task.user_id == current_user.id).offset(skip).limit(limit).all()
-    # return task_service.get_tasks(db, current_user.id)
+
+    tasks = db.query(models.Task).filter(
+        models.Task.user_id == current_user.id,
+        models.Task.title.contains(search)
+    ).order_by(models.Task.id.desc()).offset(skip).limit(limit).all()
+
     return tasks
 
 @router.get("/{task_id}", response_model=schemas.Task)
@@ -48,10 +53,9 @@ def get_task(
 def update_task(task_id: int,
                 task_data: schemas.TaskUpdate,
                 db: Session = Depends(get_db),
-                current_user: models.User = Depends(get_current_user)):
-    """
-    Update an existing task
-    """
+                current_user: models.User = Depends(get_current_user)
+):
+
     return task_service.update_task(db, task_id, task_data, current_user.id)
 
 

@@ -5,6 +5,7 @@ class TaskBase(BaseModel):
     title: str
     completed: bool = False
 
+
 class TaskCreate(TaskBase):
     pass
 
