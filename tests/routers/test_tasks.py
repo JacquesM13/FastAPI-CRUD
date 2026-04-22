@@ -6,6 +6,7 @@ from app import models, schemas
 from app.core.security import hash_password
 from app.core.auth import create_access_token
 
+
 def test_get_tasks_unauthenticated(client):
     response = client.get("/tasks/")
     assert response.status_code == 401

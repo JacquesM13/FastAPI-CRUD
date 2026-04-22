@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app import schemas, models
 from app.schemas import TaskCreate
 from app.services import task_service
+from app.services.background_tasks import send_task_created_email
 
 from app.core.dependencies import get_current_user
 
@@ -18,9 +19,18 @@ router = APIRouter(
 def create_task(
     task_data: schemas.TaskCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user),
+    background_tasks: BackgroundTasks = None
 ):
-    return task_service.create_task(db, task_data, current_user.id)
+    task = task_service.create_task(db, task_data, current_user.id)
+
+    background_tasks.add_task(
+        send_task_created_email,
+        current_user.email,
+        task.title,
+    )
+
+    return task
 
 
 
