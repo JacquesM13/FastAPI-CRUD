@@ -6,7 +6,7 @@ from app.database import get_db
 from app import schemas, models
 from app.schemas import TaskCreate
 from app.services import task_service
-from app.services.background_tasks import send_task_created_notification
+from app.services.background_tasks import send_task_modified_notification, send_task_fetched_notification, send_task_deleted_notification
 
 from app.core.dependencies import get_current_user
 
@@ -26,7 +26,7 @@ def create_task(
     task = task_service.create_task(db, task_data, current_user.id)
     print("Adding task")
     background_tasks.add_task(
-        send_task_created_notification,
+        send_task_modified_notification,
         current_user.email,
         task.title,
     )
@@ -40,14 +40,20 @@ def get_tasks(
     skip: int = 0,
     search: str = "",
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user),
+    background_tasks: BackgroundTasks = None
 ):
-
+    print("Fetching tasks...")
     tasks = db.query(models.Task).filter(
         models.Task.user_id == current_user.id,
         models.Task.title.contains(search)
     ).order_by(models.Task.id.desc()).offset(skip).limit(limit).all()
 
+    background_tasks.add_task(
+        send_task_fetched_notification,
+        current_user.email
+    )
+    print("Tasks fetched")
     return tasks
 
 @router.get("/{task_id}", response_model=schemas.Task)
@@ -73,6 +79,17 @@ def update_task(task_id: int,
 def delete_task(
     task_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user),
+    background_tasks: BackgroundTasks = None,
 ):
+    print("Deleting task")
+
+    task = task_service.get_task(db, task_id, current_user.id)
+
+    background_tasks.add_task(
+        send_task_deleted_notification,
+        current_user.email,
+        task.title
+    )
+    print("Task deleted")
     return task_service.delete_task(db, task_id, current_user.id)

@@ -14,4 +14,4 @@ app.include_router(users.router)
 
 @app.get("/")
 def root():
-    return {"message": "API is running"}
+    return {"message": "API is running here: http://127.0.0.1:8000/docs#/"}
