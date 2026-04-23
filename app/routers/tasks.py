@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
+import time
 
 from app.database import get_db
 from app import schemas, models
 from app.schemas import TaskCreate
 from app.services import task_service
-from app.services.background_tasks import send_task_created_email
+from app.services.background_tasks import send_task_created_notification
 
 from app.core.dependencies import get_current_user
 
@@ -23,15 +24,14 @@ def create_task(
     background_tasks: BackgroundTasks = None
 ):
     task = task_service.create_task(db, task_data, current_user.id)
-
+    print("Adding task")
     background_tasks.add_task(
-        send_task_created_email,
+        send_task_created_notification,
         current_user.email,
         task.title,
     )
-
+    print("Task added")
     return task
-
 
 
 @router.get("/", response_model=list[schemas.Task])
