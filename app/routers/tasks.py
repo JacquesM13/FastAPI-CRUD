@@ -85,7 +85,6 @@ def delete_task(
     print("Deleting task")
 
     task = task_service.get_task(db, task_id, current_user.id)
-
     background_tasks.add_task(
         send_task_deleted_notification,
         current_user.email,
